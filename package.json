@@ -1,5 +1,5 @@
 {
-  "name": "reterm-libapps",
+  "name": "reterm-libdot",
   "version": "1.0.0",
   "description": "Grab bag of js, including hterm and its support library.",
   "main": "libdot/js/lib.js",
