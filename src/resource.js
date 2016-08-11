@@ -83,8 +83,8 @@ resource.getData = function(name, opt_defaultValue) {
  * @return {*} A data: url encoded version of the resource.
  */
 resource.getDataUrl = function(name, opt_defaultValue) {
-  var resource = resource.get(name, opt_defaultValue);
-  return 'data:' + resource.type + ',' + resource.data;
+  var res = resource.get(name, opt_defaultValue);
+  return 'data:' + res.type + ',' + res.data;
 };
 
 export default resource;
