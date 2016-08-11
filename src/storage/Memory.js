@@ -2,37 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-'use strict';
-
 /**
- * window.localStorage based class with an async interface that is
- * interchangeable with other lib.Storage.* implementations.
+ * In-memory storage class with an async interface that is interchangeable with
+ * other lib.Storage.* implementations.
  */
-lib.Storage.Local = function() {
+const Memory = function() {
   this.observers_ = [];
-  this.storage_ = window.localStorage;
-  window.addEventListener('storage', this.onStorage_.bind(this));
-};
-
-/**
- * Called by the storage implementation when the storage is modified.
- */
-lib.Storage.Local.prototype.onStorage_ = function(e) {
-  if (e.storageArea != this.storage_)
-    return;
-
-  // IE throws an exception if JSON.parse is given an empty string.
-  var prevValue = e.oldValue ? JSON.parse(e.oldValue) : "";
-  var curValue = e.newValue ? JSON.parse(e.newValue) : "";
-  var o = {};
-  o[e.key] = {
-    oldValue: prevValue,
-    newValue: curValue
-  };
-
-  for (var i = 0; i < this.observers_.length; i++) {
-    this.observers_[i](o);
-  }
+  this.storage_ = {};
 };
 
 /**
@@ -41,7 +17,7 @@ lib.Storage.Local.prototype.onStorage_ = function(e) {
  * @param {function(map)} callback The function to invoke when the storage
  *     changes.
  */
-lib.Storage.Local.prototype.addObserver = function(callback) {
+Memory.prototype.addObserver = function(callback) {
   this.observers_.push(callback);
 };
 
@@ -50,7 +26,7 @@ lib.Storage.Local.prototype.addObserver = function(callback) {
  *
  * @param {function} observer A previously registered callback.
  */
-lib.Storage.Local.prototype.removeObserver = function(callback) {
+Memory.prototype.removeObserver = function(callback) {
   var i = this.observers_.indexOf(callback);
   if (i != -1)
     this.observers_.splice(i, 1);
@@ -62,8 +38,19 @@ lib.Storage.Local.prototype.removeObserver = function(callback) {
  * @param {function(map)} callback The function to invoke when the delete
  *     has completed.
  */
-lib.Storage.Local.prototype.clear = function(opt_callback) {
-  this.storage_.clear();
+Memory.prototype.clear = function(opt_callback) {
+  var e = {};
+  for (var key in this.storage_) {
+    e[key] = {oldValue: this.storage_[key], newValue: (void 0)};
+  }
+
+  this.storage_ = {};
+
+  setTimeout(function() {
+    for (var i = 0; i < this.observers_.length; i++) {
+      this.observers_[i](e);
+    }
+  }.bind(this), 0);
 
   if (opt_callback)
     setTimeout(opt_callback, 0);
@@ -76,8 +63,8 @@ lib.Storage.Local.prototype.clear = function(opt_callback) {
  * @param {function(value) callback The function to invoke when the value has
  *     been retrieved.
  */
-lib.Storage.Local.prototype.getItem = function(key, callback) {
-  var value = this.storage_.getItem(key);
+Memory.prototype.getItem = function(key, callback) {
+  var value = this.storage_[key];
 
   if (typeof value == 'string') {
     try {
@@ -97,12 +84,12 @@ lib.Storage.Local.prototype.getItem = function(key, callback) {
  * @param {function(map) callback The function to invoke when the values have
  *     been retrieved.
  */
-lib.Storage.Local.prototype.getItems = function(keys, callback) {
+Memory.prototype.getItems = function(keys, callback) {
   var rv = {};
 
   for (var i = keys.length - 1; i >= 0; i--) {
     var key = keys[i];
-    var value = this.storage_.getItem(key);
+    var value = this.storage_[key];
     if (typeof value == 'string') {
       try {
         rv[key] = JSON.parse(value);
@@ -128,8 +115,18 @@ lib.Storage.Local.prototype.getItems = function(keys, callback) {
  *     set is complete.  You don't have to wait for the set to complete in order
  *     to read the value, since the local cache is updated synchronously.
  */
-lib.Storage.Local.prototype.setItem = function(key, value, opt_callback) {
-  this.storage_.setItem(key, JSON.stringify(value));
+Memory.prototype.setItem = function(key, value, opt_callback) {
+  var oldValue = this.storage_[key];
+  this.storage_[key] = JSON.stringify(value);
+
+  var e = {};
+  e[key] = {oldValue: oldValue, newValue: value};
+
+  setTimeout(function() {
+    for (var i = 0; i < this.observers_.length; i++) {
+      this.observers_[i](e);
+    }
+  }.bind(this), 0);
 
   if (opt_callback)
   setTimeout(opt_callback, 0);
@@ -143,10 +140,19 @@ lib.Storage.Local.prototype.setItem = function(key, value, opt_callback) {
  *     set is complete.  You don't have to wait for the set to complete in order
  *     to read the value, since the local cache is updated synchronously.
  */
-lib.Storage.Local.prototype.setItems = function(obj, opt_callback) {
+Memory.prototype.setItems = function(obj, opt_callback) {
+  var e = {};
+
   for (var key in obj) {
-    this.storage_.setItem(key, JSON.stringify(obj[key]));
+    e[key] = {oldValue: this.storage_[key], newValue: obj[key]};
+    this.storage_[key] = JSON.stringify(obj[key]);
   }
+
+  setTimeout(function() {
+    for (var i = 0; i < this.observers_.length; i++) {
+      this.observers_[i](e);
+    }
+  }.bind(this));
 
   if (opt_callback)
   setTimeout(opt_callback, 0);
@@ -160,8 +166,8 @@ lib.Storage.Local.prototype.setItems = function(obj, opt_callback) {
  *     remove is complete.  You don't have to wait for the set to complete in
  *     order to read the value, since the local cache is updated synchronously.
  */
-lib.Storage.Local.prototype.removeItem = function(key, opt_callback) {
-  this.storage_.removeItem(key);
+Memory.prototype.removeItem = function(key, opt_callback) {
+  delete this.storage_[key];
 
   if (opt_callback)
   setTimeout(opt_callback, 0);
@@ -175,11 +181,13 @@ lib.Storage.Local.prototype.removeItem = function(key, opt_callback) {
  *     remove is complete.  You don't have to wait for the set to complete in
  *     order to read the value, since the local cache is updated synchronously.
  */
-lib.Storage.Local.prototype.removeItems = function(ary, opt_callback) {
+Memory.prototype.removeItems = function(ary, opt_callback) {
   for (var i = 0; i < ary.length; i++) {
-    this.storage_.removeItem(ary[i]);
+    delete this.storage_[ary[i]];
   }
 
   if (opt_callback)
   setTimeout(opt_callback, 0);
 };
+
+export default Memory;

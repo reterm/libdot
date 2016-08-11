@@ -2,7 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-'use strict';
+import test from 'ava'
+import { UTF8Decoder, encodeUTF8, decodeUTF8 } from 'utf8';
 
 /**
  * @fileoverview UTF8 test suite.
@@ -15,67 +16,62 @@
  * (U+0080 through U+00FF) for each.
  */
 
-lib.UTF8 = {};
-lib.UTF8.Tests = new lib.TestManager.Suite('lib.UTF8.Tests');
 
-lib.UTF8.Tests.addTest('round-trip-ASCII', function(result, cx) {
+test('round-trip-ASCII', t => {
   var roundTripASCII = function(str) {
-    var enc = lib.encodeUTF8(str);
-    var dec = lib.decodeUTF8(enc);
+    var enc = encodeUTF8(str);
+    var dec = decodeUTF8(enc);
 
-    result.assertEQ(enc, str, "ASCII encodes to itself");
-    result.assertEQ(dec, str, "ASCII decodes to itself");
+    t.is(enc, str, "ASCII encodes to itself");
+    t.is(dec, str, "ASCII decodes to itself");
   };
 
   roundTripASCII('');
   roundTripASCII('a');
   roundTripASCII('abc');
-  result.pass();
 });
 
-lib.UTF8.Tests.addTest('round-trip-multibyte', function(result, cx) {
+test('round-trip-multibyte', t => {
   var roundTripMultibyte = function(str) {
-    var enc = lib.encodeUTF8(str);
-    var dec = lib.decodeUTF8(enc);
+    var enc = encodeUTF8(str);
+    var dec = decodeUTF8(enc);
 
-    result.assert(enc.length > str.length, "Multibyte encodes to longer");
-    result.assertEQ(dec, str, "Multibyte round trips to self");
+    t.true(enc.length > str.length, "Multibyte encodes to longer");
+    t.is(dec, str, "Multibyte round trips to self");
   };
 
   roundTripMultibyte('áבç');
   roundTripMultibyte('一丁丂');
   roundTripMultibyte('𝄞𝄢');
-  result.pass();
 });
 
-lib.UTF8.Tests.addTest('chunked-decoding', function(result, cx) {
+test('chunked-decoding', t => {
   var str = "abγδ∀∃𝄞𝄢";
-  var enc = lib.encodeUTF8(str);
+  var enc = encodeUTF8(str);
 
   for (var i = 0; i <= enc.length; i += 1) {
     var encPart1 = enc.substring(0,i);
     var encPart2 = enc.substring(i);
 
-    var decoder = new lib.UTF8Decoder();
+    var decoder = new UTF8Decoder();
     var decPart1 = decoder.decode(encPart1);
     var decPart2 = decoder.decode(encPart2);
     var dec = decPart1 + decPart2;
 
-    result.assertEQ(dec, str, "Round trips when split at " + i);
+    t.is(dec, str, "Round trips when split at " + i);
   }
-  result.pass();
 });
 
-lib.UTF8.Tests.addTest('decoding-bad-sequences', function(result, cx) {
-  var encPart1 = lib.encodeUTF8('abc');
-  var encPart3 = lib.encodeUTF8('def');
+test('decoding-bad-sequences', t => {
+  var encPart1 = encodeUTF8('abc');
+  var encPart3 = encodeUTF8('def');
   var str = "abc\ufffddef";
 
   var testBad = function(badUTF8, type) {
     var enc = encPart1 + badUTF8 + encPart3;
-    var dec = lib.decodeUTF8(enc);
+    var dec = decodeUTF8(enc);
 
-    result.assertEQ(dec, str, "Decoding with " + type);
+    t.is(dec, str, "Decoding with " + type);
   };
 
   testBad('\u0080', 'bare continuation');
@@ -88,10 +84,9 @@ lib.UTF8.Tests.addTest('decoding-bad-sequences', function(result, cx) {
   testBad('\u00C0', 'illegal starter');
   testBad('\u00C0\u0080', 'illegal two byte');
   testBad('\u00E0\u0080\u0080', 'illegal three byte');
-  result.pass();
 });
 
-lib.UTF8.Tests.addTest('round-trip-blocks', function(result, cx) {
+test('round-trip-blocks', t => {
   var codepointString = function(n) {
     var h = n.toString(16).toUpperCase();
     return 'U+' + '0000'.substring(0, 4 - h.length) + h;
@@ -113,10 +108,10 @@ lib.UTF8.Tests.addTest('round-trip-blocks', function(result, cx) {
       }
     };
 
-    var enc = lib.encodeUTF8(str);
-    var dec = lib.decodeUTF8(enc);
+    var enc = encodeUTF8(str);
+    var dec = decodeUTF8(enc);
 
-    result.assertEQ(dec, str,
+    t.is(dec, str,
       'Block ' + codepointString(blockStart)
       + ' ~ ' + codepointString(blockEnd));
   }
@@ -132,6 +127,4 @@ lib.UTF8.Tests.addTest('round-trip-blocks', function(result, cx) {
 
   testBlockRange(0x0000, 0xFFFF, 64);       // test BMP in small blocks
   testBlockRange(0x10000, 0x10FFFF, 4096);  // rest in large
-  result.pass();
 });
-

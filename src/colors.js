@@ -7,7 +7,7 @@
 /**
  * Namespace for color utilities.
  */
-lib.colors = {};
+const colors = {};
 
 /**
  * First, some canned regular expressions we're going to use in this file.
@@ -31,7 +31,7 @@ lib.colors = {};
  *
  * Instead, we stoop to this .replace() trick.
  */
-lib.colors.re_ = {
+colors.re_ = {
   // CSS hex color, #RGB.
   hex16: /#([a-f0-9])([a-f0-9])([a-f0-9])/i,
 
@@ -76,7 +76,7 @@ lib.colors.re_ = {
  * @return {string} The X11 color value or null if the value could not be
  *     converted.
  */
-lib.colors.rgbToX11 = function(value) {
+colors.rgbToX11 = function(value) {
   function scale(v) {
     v = (Math.min(v, 255) * 257).toString(16);
     while (v.length < 4)
@@ -85,7 +85,7 @@ lib.colors.rgbToX11 = function(value) {
     return v;
   }
 
-  var ary = value.match(lib.colors.re_.rgbx);
+  var ary = value.match(colors.re_.rgbx);
   if (!ary)
     return null;
 
@@ -103,7 +103,7 @@ lib.colors.rgbToX11 = function(value) {
  * @return {string} The CSS color value or null if the value could not be
  *     converted.
  */
-lib.colors.x11ToCSS = function(v) {
+colors.x11ToCSS = function(v) {
   function scale(v) {
     // Pad out values with less than four digits.  This padding (probably)
     // matches xterm.  It's difficult to say for sure since xterm seems to
@@ -135,12 +135,12 @@ lib.colors.x11ToCSS = function(v) {
     return Math.round(parseInt(v, 16) / 257);
   }
 
-  var ary = v.match(lib.colors.re_.x11rgb);
+  var ary = v.match(colors.re_.x11rgb);
   if (!ary)
-    return lib.colors.nameToRGB(v);
+    return colors.nameToRGB(v);
 
   ary.splice(0, 1);
-  return lib.colors.arrayToRGBA(ary.map(scale));
+  return colors.arrayToRGBA(ary.map(scale));
 };
 
 /**
@@ -154,9 +154,9 @@ lib.colors.x11ToCSS = function(v) {
  *     convert.
  * @return {string|Array.<string>} The converted value or values.
  */
-lib.colors.hexToRGB = function(arg) {
-  var hex16 = lib.colors.re_.hex16;
-  var hex24 = lib.colors.re_.hex24;
+colors.hexToRGB = function(arg) {
+  var hex16 = colors.re_.hex16;
+  var hex24 = colors.re_.hex24;
 
   function convert(hex) {
     if (hex.length == 4) {
@@ -196,9 +196,9 @@ lib.colors.hexToRGB = function(arg) {
  *     values to convert.
  * @return {string|Array.<string>} The converted value or values.
  */
-lib.colors.rgbToHex = function(arg) {
+colors.rgbToHex = function(arg) {
   function convert(rgb) {
-    var ary = lib.colors.crackRGB(rgb);
+    var ary = colors.crackRGB(rgb);
     return '#' + lib.f.zpad(((parseInt(ary[0]) << 16) |
                              (parseInt(ary[1]) <<  8) |
                              (parseInt(ary[2]) <<  0)).toString(16), 6);
@@ -220,20 +220,20 @@ lib.colors.rgbToHex = function(arg) {
  *
  * Returns null if the value could not be normalized.
  */
-lib.colors.normalizeCSS = function(def) {
+colors.normalizeCSS = function(def) {
   if (def.substr(0, 1) == '#')
-    return lib.colors.hexToRGB(def);
+    return colors.hexToRGB(def);
 
-  if (lib.colors.re_.rgbx.test(def))
+  if (colors.re_.rgbx.test(def))
     return def;
 
-  return lib.colors.nameToRGB(def);
+  return colors.nameToRGB(def);
 };
 
 /**
  * Convert a 3 or 4 element array into an rgba(...) string.
  */
-lib.colors.arrayToRGBA = function(ary) {
+colors.arrayToRGBA = function(ary) {
   var alpha = (ary.length > 3) ? ary[3] : 1;
   return 'rgba(' + ary[0] + ', ' + ary[1] + ', ' + ary[2] + ', ' + alpha + ')';
 };
@@ -241,25 +241,25 @@ lib.colors.arrayToRGBA = function(ary) {
 /**
  * Overwrite the alpha channel of an rgb/rgba color.
  */
-lib.colors.setAlpha = function(rgb, alpha) {
-  var ary = lib.colors.crackRGB(rgb);
+colors.setAlpha = function(rgb, alpha) {
+  var ary = colors.crackRGB(rgb);
   ary[3] = alpha;
-  return lib.colors.arrayToRGBA(ary);
+  return colors.arrayToRGBA(ary);
 };
 
 /**
  * Mix a percentage of a tint color into a base color.
  */
-lib.colors.mix = function(base, tint, percent) {
-  var ary1 = lib.colors.crackRGB(base);
-  var ary2 = lib.colors.crackRGB(tint);
+colors.mix = function(base, tint, percent) {
+  var ary1 = colors.crackRGB(base);
+  var ary2 = colors.crackRGB(tint);
 
   for (var i = 0; i < 4; ++i) {
     var diff = ary2[i] - ary1[i];
     ary1[i] = Math.round(parseInt(ary1[i]) + diff * percent);
   }
 
-  return lib.colors.arrayToRGBA(ary1);
+  return colors.arrayToRGBA(ary1);
 };
 
 /**
@@ -268,15 +268,15 @@ lib.colors.mix = function(base, tint, percent) {
  * On success, a 4 element array will be returned.  For rgb values, the alpha
  * will be set to 1.
  */
-lib.colors.crackRGB = function(color) {
+colors.crackRGB = function(color) {
   if (color.substr(0, 4) == 'rgba') {
-    var ary = color.match(lib.colors.re_.rgba);
+    var ary = color.match(colors.re_.rgba);
     if (ary) {
       ary.shift();
       return ary;
     }
   } else {
-    var ary = color.match(lib.colors.re_.rgb);
+    var ary = color.match(colors.re_.rgb);
     if (ary) {
       ary.shift();
       ary.push(1);
@@ -300,17 +300,17 @@ lib.colors.crackRGB = function(color) {
  * @param {string} name The color name to convert.
  * @return {string} The corresponding CSS rgb(...) value.
  */
-lib.colors.nameToRGB = function(name) {
-  if (name in lib.colors.colorNames)
-    return lib.colors.colorNames[name];
+colors.nameToRGB = function(name) {
+  if (name in colors.colorNames)
+    return colors.colorNames[name];
 
   name = name.toLowerCase();
-  if (name in lib.colors.colorNames)
-    return lib.colors.colorNames[name];
+  if (name in colors.colorNames)
+    return colors.colorNames[name];
 
   name = name.replace(/\s+/g, '');
-  if (name in lib.colors.colorNames)
-    return lib.colors.colorNames[name];
+  if (name in colors.colorNames)
+    return colors.colorNames[name];
 
   return null;
 };
@@ -318,7 +318,7 @@ lib.colors.nameToRGB = function(name) {
 /**
  * The stock color palette.
  */
-lib.colors.stockColorPalette = lib.colors.hexToRGB
+colors.stockColorPalette = colors.hexToRGB
   ([// The "ANSI 16"...
     '#000000', '#CC0000', '#4E9A06', '#C4A000',
     '#3465A4', '#75507B', '#06989A', '#D3D7CF',
@@ -378,12 +378,12 @@ lib.colors.stockColorPalette = lib.colors.hexToRGB
 /**
  * The current color palette, possibly with user changes.
  */
-lib.colors.colorPalette = lib.colors.stockColorPalette;
+colors.colorPalette = colors.stockColorPalette;
 
 /**
  * Named colors according to the stock X11 rgb.txt file.
  */
-lib.colors.colorNames = {
+colors.colorNames = {
   "aliceblue": "rgb(240, 248, 255)",
   "antiquewhite": "rgb(250, 235, 215)",
   "antiquewhite1": "rgb(255, 239, 219)",
@@ -1043,3 +1043,5 @@ lib.colors.colorNames = {
   "yellow4": "rgb(139, 139, 0)",
   "yellowgreen": "rgb(154, 205, 50)"
 };
+
+export default colors;

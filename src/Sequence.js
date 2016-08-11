@@ -2,9 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-'use strict';
-
-lib.rtdep('lib.f.getStack');
+import f from './f'
 
 /**
  * A utility for managing sequences of asynchronous functions.
@@ -49,7 +47,7 @@ lib.rtdep('lib.f.getStack');
  * @param {Object} bindObject The object to apply each sequence function to.
  * @param {Array<function(Object)>} ary The array of sequence functions.
  */
-lib.f.Sequence = function(bindObject, ary) {
+const Sequence = function(bindObject, ary) {
   this.ary = ary;
   this.bindObject = bindObject;
 
@@ -72,7 +70,7 @@ lib.f.Sequence = function(bindObject, ary) {
  *     ends with an error.
  * @param {*} opt_arg An optional value to include as cx.arg.
  */
-lib.f.Sequence.prototype.run = function(onSuccess, onError, opt_arg) {
+Sequence.prototype.run = function(onSuccess, onError, opt_arg) {
   var ary = this.ary;
   var step = 0;
 
@@ -129,3 +127,5 @@ lib.f.Sequence.prototype.run = function(onSuccess, onError, opt_arg) {
 
   ary[0].call(bindObject, cx);
 };
+
+export default Sequence;

@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-'use strict';
-
 /**
  * Storage for canned resources.
  *
@@ -15,7 +13,7 @@
  * This is global storage, so you should prefix your resource names to avoid
  * collisions.
  */
-lib.resource = {
+const resource = {
   resources_: {}
 };
 
@@ -28,8 +26,8 @@ lib.resource = {
  *   applicable.
  * @param {*} data The value of the resource.
  */
-lib.resource.add = function(name, type, data) {
-  lib.resource.resources_[name] = {
+resource.add = function(name, type, data) {
+  resource.resources_[name] = {
     type: type,
     name: name,
     data: data
@@ -46,15 +44,15 @@ lib.resource.add = function(name, type, data) {
  *   not defined.
  * @return {object} An object with "type", "name", and "data" properties.
  */
-lib.resource.get = function(name, opt_defaultValue) {
-  if (!(name in lib.resource.resources_)) {
+resource.get = function(name, opt_defaultValue) {
+  if (!(name in resource.resources_)) {
     if (typeof opt_defaultValue == 'undefined')
       throw 'Unknown resource: ' + name;
 
     return opt_defaultValue;
   }
 
-  return lib.resource.resources_[name];
+  return resource.resources_[name];
 };
 
 /**
@@ -65,15 +63,15 @@ lib.resource.get = function(name, opt_defaultValue) {
  *   not defined.
  * @return {*} The resource data.
  */
-lib.resource.getData = function(name, opt_defaultValue) {
-  if (!(name in lib.resource.resources_)) {
+resource.getData = function(name, opt_defaultValue) {
+  if (!(name in resource.resources_)) {
     if (typeof opt_defaultValue == 'undefined')
       throw 'Unknown resource: ' + name;
 
     return opt_defaultValue;
   }
 
-  return lib.resource.resources_[name].data;
+  return resource.resources_[name].data;
 };
 
 /**
@@ -84,7 +82,9 @@ lib.resource.getData = function(name, opt_defaultValue) {
  *   not defined.
  * @return {*} A data: url encoded version of the resource.
  */
-lib.resource.getDataUrl = function(name, opt_defaultValue) {
-  var resource = lib.resource.get(name, opt_defaultValue);
+resource.getDataUrl = function(name, opt_defaultValue) {
+  var resource = resource.get(name, opt_defaultValue);
   return 'data:' + resource.type + ',' + resource.data;
 };
+
+export default resource;

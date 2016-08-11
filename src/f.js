@@ -2,12 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-'use strict';
-
-/**
- * Grab bag of utility functions.
- */
-lib.f = {};
+const f = {};
 
 /**
  * Replace variable references in a string.
@@ -22,15 +17,15 @@ lib.f = {};
  *
  * Will result in "Hello, Google%2B".
  */
-lib.f.replaceVars = function(str, vars) {
+f.replaceVars = function(str, vars) {
   return str.replace(/%([a-z]*)\(([^\)]+)\)/gi, function(match, fn, varname) {
       if (typeof vars[varname] == 'undefined')
         throw 'Unknown variable: ' + varname;
 
       var rv = vars[varname];
 
-      if (fn in lib.f.replaceVars.functions) {
-        rv = lib.f.replaceVars.functions[fn](rv);
+      if (fn in f.replaceVars.functions) {
+        rv = f.replaceVars.functions[fn](rv);
       } else if (fn) {
         throw 'Unknown escape function: ' + fn;
       }
@@ -44,7 +39,7 @@ lib.f.replaceVars = function(str, vars) {
  *
  * Clients can add to this list to extend lib.f.replaceVars().
  */
-lib.f.replaceVars.functions = {
+f.replaceVars.functions = {
   encodeURI: encodeURI,
   encodeURIComponent: encodeURIComponent,
   escapeHTML: function(str) {
@@ -66,7 +61,7 @@ lib.f.replaceVars.functions = {
  * @param {function(Array)} callback Function to invoke with the results.  The
  *     parameter is a list of locale names.
  */
-lib.f.getAcceptLanguages = function(callback) {
+f.getAcceptLanguages = function(callback) {
   if (window.chrome && chrome.i18n) {
     chrome.i18n.getAcceptLanguages(callback);
   } else {
@@ -90,7 +85,7 @@ lib.f.getAcceptLanguages = function(callback) {
  * @param {string} queryString The string to parse.  If it starts with a
  *     leading '?', the '?' will be ignored.
  */
-lib.f.parseQuery = function(queryString) {
+f.parseQuery = function(queryString) {
   if (queryString.substr(0, 1) == '?')
     queryString = queryString.substr(1);
 
@@ -105,7 +100,7 @@ lib.f.parseQuery = function(queryString) {
   return rv;
 };
 
-lib.f.getURL = function(path) {
+f.getURL = function(path) {
   if (window.chrome && chrome.runtime && chrome.runtime.getURL)
     return chrome.runtime.getURL(path);
 
@@ -119,7 +114,7 @@ lib.f.getURL = function(path) {
  * @param {integer} min The minimum acceptable value.
  * @param {integer} max The maximum acceptable value.
  */
-lib.f.clamp = function(v, min, max) {
+f.clamp = function(v, min, max) {
   if (v < min)
     return min;
   if (v > max)
@@ -135,7 +130,7 @@ lib.f.clamp = function(v, min, max) {
  * @param {string} opt_ch The optional padding character, defaults to ' '.
  * @return {string} The padded string.
  */
-lib.f.lpad = function(str, length, opt_ch) {
+f.lpad = function(str, length, opt_ch) {
   str = String(str);
   opt_ch = opt_ch || ' ';
 
@@ -152,8 +147,8 @@ lib.f.lpad = function(str, length, opt_ch) {
  * @param {integer} length The desired length.
  * @return {string} The padded number as a string.
  */
-lib.f.zpad = function(number, length) {
-  return lib.f.lpad(number, length, '0');
+f.zpad = function(number, length) {
+  return f.lpad(number, length, '0');
 };
 
 /**
@@ -166,7 +161,7 @@ lib.f.zpad = function(number, length) {
  * @param {integer} length The desired amount of whitespace.
  * @param {string} A string of spaces of the requested length.
  */
-lib.f.getWhitespace = function(length) {
+f.getWhitespace = function(length) {
   if (length == 0)
     return '';
 
@@ -210,9 +205,9 @@ lib.f.getWhitespace = function(length) {
  *     the wrapped callback.  If callback is a string then the return value will
  *     be a function that generates new wrapped callbacks.
  */
-lib.f.alarm = function(callback, opt_ms) {
+f.alarm = function(callback, opt_ms) {
   var ms = opt_ms || 5 * 1000;
-  var stack = lib.f.getStack(1);
+  var stack = f.getStack(1);
 
   return (function() {
     // This outer function is called immediately.  It's here to capture a new
@@ -223,7 +218,7 @@ lib.f.alarm = function(callback, opt_ms) {
     var timeout = setTimeout(function() {
       var name = (typeof callback == 'string') ? name : callback.name;
       name = name ? (': ' + name) : '';
-      console.warn('lib.f.alarm: timeout expired: ' + (ms / 1000) + 's' + name);
+      console.warn('f.alarm: timeout expired: ' + (ms / 1000) + 's' + name);
       console.log(stack);
       timeout = null;
     }, ms);
@@ -264,7 +259,7 @@ lib.f.alarm = function(callback, opt_ms) {
  * @param {number} opt_ignoreFrames The optional number of stack frames to
  *     ignore.  The actual 'getStack' call is always ignored.
  */
-lib.f.getStack = function(opt_ignoreFrames) {
+f.getStack = function(opt_ignoreFrames) {
   var ignoreFrames = opt_ignoreFrames ? opt_ignoreFrames + 2 : 2;
 
   var stackArray;
@@ -294,7 +289,7 @@ lib.f.getStack = function(opt_ignoreFrames) {
  * @param {number} denominator
  * @return {number}
  */
-lib.f.smartFloorDivide = function(numerator,  denominator) {
+f.smartFloorDivide = function(numerator,  denominator) {
   var val = numerator / denominator;
   var ceiling = Math.ceil(val);
   if (ceiling - val < .0001) {
@@ -303,3 +298,5 @@ lib.f.smartFloorDivide = function(numerator,  denominator) {
     return Math.floor(val);
   }
 };
+
+export default f;

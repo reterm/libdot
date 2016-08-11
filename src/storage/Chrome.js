@@ -2,15 +2,27 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-'use strict';
+/**
+ * chrome.storage based class with an async interface that is interchangeable
+ * with other lib.Storage.* implementations.
+ */
+const Chrome = function(storage) {
+  this.storage_ = storage;
+  this.observers_ = [];
+
+  chrome.storage.onChanged.addListener(this.onChanged_.bind(this));
+};
 
 /**
- * In-memory storage class with an async interface that is interchangeable with
- * other lib.Storage.* implementations.
+ * Called by the storage implementation when the storage is modified.
  */
-lib.Storage.Memory = function() {
-  this.observers_ = [];
-  this.storage_ = {};
+Chrome.prototype.onChanged_ = function(changes, areaname) {
+  if (chrome.storage[areaname] != this.storage_)
+    return;
+
+  for (var i = 0; i < this.observers_.length; i++) {
+    this.observers_[i](changes);
+  }
 };
 
 /**
@@ -19,7 +31,7 @@ lib.Storage.Memory = function() {
  * @param {function(map)} callback The function to invoke when the storage
  *     changes.
  */
-lib.Storage.Memory.prototype.addObserver = function(callback) {
+Chrome.prototype.addObserver = function(callback) {
   this.observers_.push(callback);
 };
 
@@ -28,7 +40,7 @@ lib.Storage.Memory.prototype.addObserver = function(callback) {
  *
  * @param {function} observer A previously registered callback.
  */
-lib.Storage.Memory.prototype.removeObserver = function(callback) {
+Chrome.prototype.removeObserver = function(callback) {
   var i = this.observers_.indexOf(callback);
   if (i != -1)
     this.observers_.splice(i, 1);
@@ -40,19 +52,8 @@ lib.Storage.Memory.prototype.removeObserver = function(callback) {
  * @param {function(map)} callback The function to invoke when the delete
  *     has completed.
  */
-lib.Storage.Memory.prototype.clear = function(opt_callback) {
-  var e = {};
-  for (var key in this.storage_) {
-    e[key] = {oldValue: this.storage_[key], newValue: (void 0)};
-  }
-
-  this.storage_ = {};
-
-  setTimeout(function() {
-    for (var i = 0; i < this.observers_.length; i++) {
-      this.observers_[i](e);
-    }
-  }.bind(this), 0);
+Chrome.prototype.clear = function(opt_callback) {
+  this.storage_.clear();
 
   if (opt_callback)
     setTimeout(opt_callback, 0);
@@ -65,20 +66,9 @@ lib.Storage.Memory.prototype.clear = function(opt_callback) {
  * @param {function(value) callback The function to invoke when the value has
  *     been retrieved.
  */
-lib.Storage.Memory.prototype.getItem = function(key, callback) {
-  var value = this.storage_[key];
-
-  if (typeof value == 'string') {
-    try {
-      value = JSON.parse(value);
-    } catch (e) {
-      // If we can't parse the value, just return it unparsed.
-    }
-  }
-
-  setTimeout(callback.bind(null, value), 0);
+Chrome.prototype.getItem = function(key, callback) {
+  this.storage_.get(key, callback);
 };
-
 /**
  * Fetch the values of multiple storage items.
  *
@@ -86,25 +76,9 @@ lib.Storage.Memory.prototype.getItem = function(key, callback) {
  * @param {function(map) callback The function to invoke when the values have
  *     been retrieved.
  */
-lib.Storage.Memory.prototype.getItems = function(keys, callback) {
-  var rv = {};
 
-  for (var i = keys.length - 1; i >= 0; i--) {
-    var key = keys[i];
-    var value = this.storage_[key];
-    if (typeof value == 'string') {
-      try {
-        rv[key] = JSON.parse(value);
-      } catch (e) {
-        // If we can't parse the value, just return it unparsed.
-        rv[key] = value;
-      }
-    } else {
-      keys.splice(i, 1);
-    }
-  }
-
-  setTimeout(callback.bind(null, rv), 0);
+Chrome.prototype.getItems = function(keys, callback) {
+  this.storage_.get(keys, callback);
 };
 
 /**
@@ -117,21 +91,10 @@ lib.Storage.Memory.prototype.getItems = function(keys, callback) {
  *     set is complete.  You don't have to wait for the set to complete in order
  *     to read the value, since the local cache is updated synchronously.
  */
-lib.Storage.Memory.prototype.setItem = function(key, value, opt_callback) {
-  var oldValue = this.storage_[key];
-  this.storage_[key] = JSON.stringify(value);
-
-  var e = {};
-  e[key] = {oldValue: oldValue, newValue: value};
-
-  setTimeout(function() {
-    for (var i = 0; i < this.observers_.length; i++) {
-      this.observers_[i](e);
-    }
-  }.bind(this), 0);
-
-  if (opt_callback)
-  setTimeout(opt_callback, 0);
+Chrome.prototype.setItem = function(key, value, opt_callback) {
+  var obj = {};
+  obj[key] = value;
+  this.storage_.set(obj, opt_callback);
 };
 
 /**
@@ -142,22 +105,8 @@ lib.Storage.Memory.prototype.setItem = function(key, value, opt_callback) {
  *     set is complete.  You don't have to wait for the set to complete in order
  *     to read the value, since the local cache is updated synchronously.
  */
-lib.Storage.Memory.prototype.setItems = function(obj, opt_callback) {
-  var e = {};
-
-  for (var key in obj) {
-    e[key] = {oldValue: this.storage_[key], newValue: obj[key]};
-    this.storage_[key] = JSON.stringify(obj[key]);
-  }
-
-  setTimeout(function() {
-    for (var i = 0; i < this.observers_.length; i++) {
-      this.observers_[i](e);
-    }
-  }.bind(this));
-
-  if (opt_callback)
-  setTimeout(opt_callback, 0);
+Chrome.prototype.setItems = function(obj, opt_callback) {
+  this.storage_.set(obj, opt_callback);
 };
 
 /**
@@ -168,11 +117,8 @@ lib.Storage.Memory.prototype.setItems = function(obj, opt_callback) {
  *     remove is complete.  You don't have to wait for the set to complete in
  *     order to read the value, since the local cache is updated synchronously.
  */
-lib.Storage.Memory.prototype.removeItem = function(key, opt_callback) {
-  delete this.storage_[key];
-
-  if (opt_callback)
-  setTimeout(opt_callback, 0);
+Chrome.prototype.removeItem = function(key, opt_callback) {
+  this.storage_.remove(key, opt_callback);
 };
 
 /**
@@ -183,11 +129,8 @@ lib.Storage.Memory.prototype.removeItem = function(key, opt_callback) {
  *     remove is complete.  You don't have to wait for the set to complete in
  *     order to read the value, since the local cache is updated synchronously.
  */
-lib.Storage.Memory.prototype.removeItems = function(ary, opt_callback) {
-  for (var i = 0; i < ary.length; i++) {
-    delete this.storage_[ary[i]];
-  }
-
-  if (opt_callback)
-  setTimeout(opt_callback, 0);
+Chrome.prototype.removeItems = function(keys, opt_callback) {
+  this.storage_.remove(keys, opt_callback);
 };
+
+export default Chrome;

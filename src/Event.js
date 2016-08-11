@@ -2,9 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-'use strict';
-
-lib.rtdep('lib.f');
+import f from './f'
 
 /**
  * An event is a JavaScript function with addListener and removeListener
@@ -25,7 +23,7 @@ lib.rtdep('lib.f');
  * @return {function(...)} A function that, when called, invokes all callbacks
  *     with whatever arguments it was passed.
  */
-lib.Event = function(opt_firstCallback, opt_finalCallback) {
+const Event = function(opt_firstCallback, opt_finalCallback) {
   var ep = function() {
     var args = Array.prototype.slice.call(arguments);
 
@@ -53,7 +51,7 @@ lib.Event = function(opt_firstCallback, opt_finalCallback) {
   ep.addListener = function(callback, opt_obj) {
     if (!callback) {
       console.error('Missing param: callback');
-      console.log(lib.f.getStack());
+      console.log(f.getStack());
     }
 
     ep.observers.push([callback, opt_obj]);
@@ -76,3 +74,5 @@ lib.Event = function(opt_firstCallback, opt_finalCallback) {
 
   return ep;
 };
+
+export default Event;

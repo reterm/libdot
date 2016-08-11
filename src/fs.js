@@ -2,18 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-'use strict';
-
-lib.rtdep('lib.f.getStack');
+import f from './f'
 
 /**
  * HTML5 FileSystem related utility functions.
  */
-lib.fs = {};
+const fs = {};
 
 if (window && typeof window.addEventListener == 'function') {
   window.addEventListener('load',
-                          function() { lib.fs.installFileErrorToString() });
+                          function() { fs.installFileErrorToString() });
 }
 
 /**
@@ -33,7 +31,7 @@ if (window && typeof window.addEventListener == 'function') {
  * @param {string} msg The message prefix to use in the log.
  * @param {function(*)} opt_callback A function to invoke after logging.
  */
-lib.fs.log = function(msg, opt_callback) {
+fs.log = function(msg, opt_callback) {
   return function() {
     var ary = Array.apply(null, arguments);
     console.log(msg + ': ' + ary.join(', '));
@@ -51,10 +49,10 @@ lib.fs.log = function(msg, opt_callback) {
  * @param {string} msg The message prefix to use in the log.
  * @param {function(*)} opt_callback A function to invoke after logging.
  */
-lib.fs.err = function(msg, opt_callback) {
+fs.err = function(msg, opt_callback) {
   return function() {
     var ary = Array.apply(null, arguments);
-    console.error(msg + ': ' + ary.join(', '), lib.f.getStack());
+    console.error(msg + ': ' + ary.join(', '), f.getStack());
     if (opt_callback)
       opt_callback.call(null, arguments);
   };
@@ -68,7 +66,7 @@ lib.fs.err = function(msg, opt_callback) {
  * error code, but provides no way to map the code to the named property.
  * This toString() implementation fixes that.
  */
-lib.fs.installFileErrorToString = function() {
+fs.installFileErrorToString = function() {
   FileError.prototype.toString = function() {
     return '[object FileError: ' + this.name + ']';
   }
@@ -80,7 +78,7 @@ lib.fs.installFileErrorToString = function() {
  * @param {integer} code A FileError code.
  * @return {string} The corresponding mnemonic value.
  */
-lib.fs.getFileErrorMnemonic = function(code) {
+fs.getFileErrorMnemonic = function(code) {
   for (var key in FileError) {
     if (key.search(/_ERR$/) != -1 && FileError[key] == code)
       return key;
@@ -103,22 +101,22 @@ lib.fs.getFileErrorMnemonic = function(code) {
  * @param {function(FileError)} opt_onError Optional function to invoke if the
  *     operation fails.
  */
-lib.fs.overwriteFile = function(root, path, contents, onSuccess, opt_onError) {
+fs.overwriteFile = function(root, path, contents, onSuccess, opt_onError) {
   function onFileRemoved() {
-    lib.fs.getOrCreateFile(root, path,
+    fs.getOrCreateFile(root, path,
                           onFileFound,
-                          lib.fs.log('Error creating: ' + path, opt_onError));
+                          fs.log('Error creating: ' + path, opt_onError));
   }
 
   function onFileFound(fileEntry) {
     fileEntry.createWriter(onFileWriter,
-                           lib.fs.log('Error creating writer for: ' + path,
+                           fs.log('Error creating writer for: ' + path,
                                       opt_onError));
   }
 
   function onFileWriter(writer) {
     writer.onwriteend = onSuccess;
-    writer.onerror = lib.fs.log('Error writing to: ' + path, opt_onError);
+    writer.onerror = fs.log('Error writing to: ' + path, opt_onError);
 
     if (!(contents instanceof Blob)) {
       contents = new Blob([contents], {type: 'text/plain'});
@@ -145,7 +143,7 @@ lib.fs.overwriteFile = function(root, path, contents, onSuccess, opt_onError) {
  * @param {function(FileError)} opt_onError Optional function to invoke if the
  *     operation fails.
  */
-lib.fs.readFile = function(root, path, onSuccess, opt_onError) {
+fs.readFile = function(root, path, onSuccess, opt_onError) {
   function onFileFound(fileEntry) {
     fileEntry.file(function(file) {
         var reader = new FileReader();
@@ -170,14 +168,14 @@ lib.fs.readFile = function(root, path, onSuccess, opt_onError) {
  * @param {function(FileError)} opt_onError Optional function to invoke if the
  *     operation fails.
  */
-lib.fs.removeFile = function(root, path, opt_onSuccess, opt_onError) {
+fs.removeFile = function(root, path, opt_onSuccess, opt_onError) {
   root.getFile(
       path, {},
       function (f) {
-        f.remove(lib.fs.log('Removed: ' + path, opt_onSuccess),
-                 lib.fs.err('Error removing' + path, opt_onError));
+        f.remove(fs.log('Removed: ' + path, opt_onSuccess),
+                 fs.err('Error removing' + path, opt_onError));
       },
-      lib.fs.log('Error finding: ' + path, opt_onError)
+      fs.log('Error finding: ' + path, opt_onError)
   );
 };
 
@@ -192,7 +190,7 @@ lib.fs.removeFile = function(root, path, opt_onSuccess, opt_onError) {
  * @param {function(FileError)} opt_onError Optional function to invoke
  *     if the operation fails.
  */
-lib.fs.readDirectory = function(root, path, onSuccess, opt_onError) {
+fs.readDirectory = function(root, path, onSuccess, opt_onError) {
   var entries = {};
 
   function onDirectoryFound(dirEntry) {
@@ -224,7 +222,7 @@ lib.fs.readDirectory = function(root, path, onSuccess, opt_onError) {
  * @param {function(FileError)} opt_onError Optional function to invoke if the
  *     operation fails.
  */
-lib.fs.getOrCreateFile = function(root, path, onSuccess, opt_onError) {
+fs.getOrCreateFile = function(root, path, onSuccess, opt_onError) {
   var dirname = null;
   var basename = null;
 
@@ -243,7 +241,7 @@ lib.fs.getOrCreateFile = function(root, path, onSuccess, opt_onError) {
   if (!dirname)
     return onDirFound(root);
 
-  lib.fs.getOrCreateDirectory(root, dirname, onDirFound, opt_onError);
+  fs.getOrCreateDirectory(root, dirname, onDirFound, opt_onError);
 };
 
 /**
@@ -257,7 +255,7 @@ lib.fs.getOrCreateFile = function(root, path, onSuccess, opt_onError) {
  * @param {function(FileError)} opt_onError Optional function to invoke if the
  *     operation fails.
  */
-lib.fs.getOrCreateDirectory = function(root, path, onSuccess, opt_onError) {
+fs.getOrCreateDirectory = function(root, path, onSuccess, opt_onError) {
   var names = path.split('/');
 
   function getOrCreateNextName(dir) {
@@ -276,3 +274,5 @@ lib.fs.getOrCreateDirectory = function(root, path, onSuccess, opt_onError) {
 
   getOrCreateNextName(root);
 };
+
+export default fs;

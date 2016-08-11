@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-'use strict';
-
 /**
  * MessageManager class handles internationalized strings.
  *
@@ -18,7 +16,7 @@
  *     should be loaded.  Newer messages replace older ones.  'en' is
  *     automatically added as the first language if it is not already present.
  */
-lib.MessageManager = function(languages) {
+const MessageManager = function(languages) {
   this.languages_ = languages.map(
       function(el) { return el.replace(/-/g, '_') });
 
@@ -34,7 +32,7 @@ lib.MessageManager = function(languages) {
  * This takes an object of the same format of a Chrome messages.json file.  See
  * <http://code.google.com/chrome/extensions/i18n-messages.html>.
  */
-lib.MessageManager.prototype.addMessages = function(defs) {
+MessageManager.prototype.addMessages = function(defs) {
   for (var key in defs) {
     var def = defs[key];
 
@@ -61,7 +59,7 @@ lib.MessageManager.prototype.addMessages = function(defs) {
  *     locale names.  If the first parameter is length 0, no locales were
  *     loaded.
  */
-lib.MessageManager.prototype.findAndLoadMessages = function(
+MessageManager.prototype.findAndLoadMessages = function(
     pattern, onComplete) {
   var languages = this.languages_.concat();
   var loaded = [];
@@ -93,7 +91,7 @@ lib.MessageManager.prototype.findAndLoadMessages = function(
 /**
  * Load messages from a messages.json file.
  */
-lib.MessageManager.prototype.loadMessages = function(
+MessageManager.prototype.loadMessages = function(
     url, onSuccess, opt_onError) {
   var xhr = new XMLHttpRequest();
 
@@ -119,7 +117,7 @@ lib.MessageManager.prototype.loadMessages = function(
  * @param {string} msg String containing the message and argument references.
  * @param {Array} args Array containing the argument values.
  */
-lib.MessageManager.replaceReferences = function(msg, args) {
+MessageManager.replaceReferences = function(msg, args) {
   return msg.replace(/\$(\d+)/g, function (m, index) {
       return args[index - 1];
     });
@@ -128,8 +126,7 @@ lib.MessageManager.replaceReferences = function(msg, args) {
 /**
  * Per-instance copy of replaceReferences.
  */
-lib.MessageManager.prototype.replaceReferences =
-    lib.MessageManager.replaceReferences;
+MessageManager.prototype.replaceReferences = MessageManager.replaceReferences;
 
 /**
  * Get a message by name, optionally replacing arguments too.
@@ -139,7 +136,7 @@ lib.MessageManager.prototype.replaceReferences =
  * @param {string} opt_default Optional value to return if the msgname is not
  *     found.  Returns the message name by default.
  */
-lib.MessageManager.prototype.get = function(msgname, opt_args, opt_default) {
+MessageManager.prototype.get = function(msgname, opt_args, opt_default) {
   var message;
 
   if (msgname in this.messages) {
@@ -184,7 +181,7 @@ lib.MessageManager.prototype.get = function(msgname, opt_args, opt_default) {
  * Notice that the "id" attribute was appended to the target attribute, and
  * the result converted to UPPER_AND_UNDER style.
  */
-lib.MessageManager.prototype.processI18nAttributes = function(dom) {
+MessageManager.prototype.processI18nAttributes = function(dom) {
   // Convert the "lower-and-dashes" attribute names into
   // "UPPER_AND_UNDER" style.
   function thunk(str) { return str.replace(/-/g, '_').toUpperCase() }
@@ -220,3 +217,5 @@ lib.MessageManager.prototype.processI18nAttributes = function(dom) {
     }
   }
 };
+
+export default MessageManager;

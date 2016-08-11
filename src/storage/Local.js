@@ -5,25 +5,33 @@
 'use strict';
 
 /**
- * chrome.storage based class with an async interface that is interchangeable
- * with other lib.Storage.* implementations.
+ * window.localStorage based class with an async interface that is
+ * interchangeable with other lib.Storage.* implementations.
  */
-lib.Storage.Chrome = function(storage) {
-  this.storage_ = storage;
+const Local = function() {
   this.observers_ = [];
-
-  chrome.storage.onChanged.addListener(this.onChanged_.bind(this));
+  this.storage_ = window.localStorage;
+  window.addEventListener('storage', this.onStorage_.bind(this));
 };
 
 /**
  * Called by the storage implementation when the storage is modified.
  */
-lib.Storage.Chrome.prototype.onChanged_ = function(changes, areaname) {
-  if (chrome.storage[areaname] != this.storage_)
+Local.prototype.onStorage_ = function(e) {
+  if (e.storageArea != this.storage_)
     return;
 
+  // IE throws an exception if JSON.parse is given an empty string.
+  var prevValue = e.oldValue ? JSON.parse(e.oldValue) : "";
+  var curValue = e.newValue ? JSON.parse(e.newValue) : "";
+  var o = {};
+  o[e.key] = {
+    oldValue: prevValue,
+    newValue: curValue
+  };
+
   for (var i = 0; i < this.observers_.length; i++) {
-    this.observers_[i](changes);
+    this.observers_[i](o);
   }
 };
 
@@ -33,7 +41,7 @@ lib.Storage.Chrome.prototype.onChanged_ = function(changes, areaname) {
  * @param {function(map)} callback The function to invoke when the storage
  *     changes.
  */
-lib.Storage.Chrome.prototype.addObserver = function(callback) {
+Local.prototype.addObserver = function(callback) {
   this.observers_.push(callback);
 };
 
@@ -42,7 +50,7 @@ lib.Storage.Chrome.prototype.addObserver = function(callback) {
  *
  * @param {function} observer A previously registered callback.
  */
-lib.Storage.Chrome.prototype.removeObserver = function(callback) {
+Local.prototype.removeObserver = function(callback) {
   var i = this.observers_.indexOf(callback);
   if (i != -1)
     this.observers_.splice(i, 1);
@@ -54,7 +62,7 @@ lib.Storage.Chrome.prototype.removeObserver = function(callback) {
  * @param {function(map)} callback The function to invoke when the delete
  *     has completed.
  */
-lib.Storage.Chrome.prototype.clear = function(opt_callback) {
+Local.prototype.clear = function(opt_callback) {
   this.storage_.clear();
 
   if (opt_callback)
@@ -68,9 +76,20 @@ lib.Storage.Chrome.prototype.clear = function(opt_callback) {
  * @param {function(value) callback The function to invoke when the value has
  *     been retrieved.
  */
-lib.Storage.Chrome.prototype.getItem = function(key, callback) {
-  this.storage_.get(key, callback);
+Local.prototype.getItem = function(key, callback) {
+  var value = this.storage_.getItem(key);
+
+  if (typeof value == 'string') {
+    try {
+      value = JSON.parse(value);
+    } catch (e) {
+      // If we can't parse the value, just return it unparsed.
+    }
+  }
+
+  setTimeout(callback.bind(null, value), 0);
 };
+
 /**
  * Fetch the values of multiple storage items.
  *
@@ -78,9 +97,25 @@ lib.Storage.Chrome.prototype.getItem = function(key, callback) {
  * @param {function(map) callback The function to invoke when the values have
  *     been retrieved.
  */
+Local.prototype.getItems = function(keys, callback) {
+  var rv = {};
 
-lib.Storage.Chrome.prototype.getItems = function(keys, callback) {
-  this.storage_.get(keys, callback);
+  for (var i = keys.length - 1; i >= 0; i--) {
+    var key = keys[i];
+    var value = this.storage_.getItem(key);
+    if (typeof value == 'string') {
+      try {
+        rv[key] = JSON.parse(value);
+      } catch (e) {
+        // If we can't parse the value, just return it unparsed.
+        rv[key] = value;
+      }
+    } else {
+      keys.splice(i, 1);
+    }
+  }
+
+  setTimeout(callback.bind(null, rv), 0);
 };
 
 /**
@@ -93,10 +128,11 @@ lib.Storage.Chrome.prototype.getItems = function(keys, callback) {
  *     set is complete.  You don't have to wait for the set to complete in order
  *     to read the value, since the local cache is updated synchronously.
  */
-lib.Storage.Chrome.prototype.setItem = function(key, value, opt_callback) {
-  var obj = {};
-  obj[key] = value;
-  this.storage_.set(obj, opt_callback);
+Local.prototype.setItem = function(key, value, opt_callback) {
+  this.storage_.setItem(key, JSON.stringify(value));
+
+  if (opt_callback)
+  setTimeout(opt_callback, 0);
 };
 
 /**
@@ -107,8 +143,13 @@ lib.Storage.Chrome.prototype.setItem = function(key, value, opt_callback) {
  *     set is complete.  You don't have to wait for the set to complete in order
  *     to read the value, since the local cache is updated synchronously.
  */
-lib.Storage.Chrome.prototype.setItems = function(obj, opt_callback) {
-  this.storage_.set(obj, opt_callback);
+Local.prototype.setItems = function(obj, opt_callback) {
+  for (var key in obj) {
+    this.storage_.setItem(key, JSON.stringify(obj[key]));
+  }
+
+  if (opt_callback)
+  setTimeout(opt_callback, 0);
 };
 
 /**
@@ -119,8 +160,11 @@ lib.Storage.Chrome.prototype.setItems = function(obj, opt_callback) {
  *     remove is complete.  You don't have to wait for the set to complete in
  *     order to read the value, since the local cache is updated synchronously.
  */
-lib.Storage.Chrome.prototype.removeItem = function(key, opt_callback) {
-  this.storage_.remove(key, opt_callback);
+Local.prototype.removeItem = function(key, opt_callback) {
+  this.storage_.removeItem(key);
+
+  if (opt_callback)
+  setTimeout(opt_callback, 0);
 };
 
 /**
@@ -131,6 +175,11 @@ lib.Storage.Chrome.prototype.removeItem = function(key, opt_callback) {
  *     remove is complete.  You don't have to wait for the set to complete in
  *     order to read the value, since the local cache is updated synchronously.
  */
-lib.Storage.Chrome.prototype.removeItems = function(keys, opt_callback) {
-  this.storage_.remove(keys, opt_callback);
+Local.prototype.removeItems = function(ary, opt_callback) {
+  for (var i = 0; i < ary.length; i++) {
+    this.storage_.removeItem(ary[i]);
+  }
+
+  if (opt_callback)
+  setTimeout(opt_callback, 0);
 };
