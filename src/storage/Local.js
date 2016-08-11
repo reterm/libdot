@@ -181,3 +181,5 @@ Local.prototype.removeItems = function(ary, opt_callback) {
   if (opt_callback)
   setTimeout(opt_callback, 0);
 };
+
+export default Local;
